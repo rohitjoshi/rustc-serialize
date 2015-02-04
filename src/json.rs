@@ -1974,6 +1974,9 @@ impl Decoder {
     fn pop(&mut self) -> Json {
         self.stack.pop().unwrap()
     }
+    pub fn read_json(&mut self) -> Json {
+        self.stack.pop().unwrap()
+    }
 }
 
 macro_rules! expect {
@@ -2076,8 +2079,17 @@ impl ::Decoder for Decoder {
     }
 
     fn read_str(&mut self) -> DecodeResult<string::String> {
-        expect!(self.pop(), String)
+        //expect!(self.pop(), String)
+        match self.pop() {
+            Json::String(v) => Ok(v),
+            Json::Null => Err(ExpectedError(stringify!(Json::Null).to_string(),
+                                  format!("{}", Json::Null))),
+            value => Ok(value.to_string()),
+        }
     }
+
+
+    
 
     fn read_enum<T, F>(&mut self, _name: &str, f: F) -> DecodeResult<T> where
         F: FnOnce(&mut Decoder) -> DecodeResult<T>,
@@ -2898,6 +2910,7 @@ mod tests {
         let res: DecodeResult<i64> = super::decode("765.25252");
         assert_eq!(res, Err(ExpectedError("Integer".to_string(), "765.25252".to_string())));
     }
+
 
     #[test]
     fn test_read_str() {
